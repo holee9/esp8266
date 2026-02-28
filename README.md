@@ -4,6 +4,27 @@
 
 ESP8266 HW-364 보드(OLED 내장)를 기반으로 한 모듈형 개인비서. ESP8266의 극도로 제한된 메모리(가용 힙 ~10-18KB) 환경에서 동작하도록 설계되었다.
 
+**Claw 분류**: AttoClaw — Claw 생태계에서 가장 극소 단위의 AI 에이전트
+
+## 현재 상태: Phase 0 완료
+
+### 구현 완료
+
+- PlatformIO 개발 환경 구축 (ESP8266 툴체인, 1MB flash 설정)
+- OLED 디스플레이 동작 확인 (SSD1306, I2C, GPIO14/12)
+- IotWebConf Captive Portal WiFi 설정 (시리얼/PC 불필요)
+- WiFi 스캔 드롭다운 (설정 페이지에서 AP 목록 자동 표시)
+- OLED 상태 표시 (Setup Mode → Connecting → WiFi OK)
+- 2색 OLED 레이아웃 (상단 노랑 상태바 / 하단 파랑 콘텐츠)
+
+### 빌드 현황
+
+| 항목 | 값 |
+|------|-----|
+| Flash | 38.1% (365KB / 958KB) |
+| RAM | 38.8% (31.7KB / 81.9KB) |
+| Free Heap (WiFi 연결 후) | ~45KB |
+
 ## 기능 (계획)
 
 - NTP 시계 및 날짜 표시
@@ -11,8 +32,21 @@ ESP8266 HW-364 보드(OLED 내장)를 기반으로 한 모듈형 개인비서. E
 - 실내 온도/습도/기압 모니터링 (BME280)
 - MQTT IoT 기기 제어
 - 푸시 알림 표시
-- Home Assistant 연동
-- AI API 연동 (OpenAI, 단발성 질의)
+- Home Assistant 연동 (PC 프록시 경유)
+- 구독형 멀티 AI 에이전트 (ChatGPT/Claude/Gemini/Ollama)
+- Dual Mode (PC Enhanced / Standalone)
+
+## WiFi 설정 방법
+
+1. 최초 부팅 시 OLED에 "Setup Mode" 표시
+2. 스마트폰 WiFi에서 **ARTHUR** AP에 연결 (패스워드: `arthur123`)
+3. 자동으로 설정 페이지 열림 (또는 브라우저에서 `http://192.168.4.1`)
+4. 로그인: `admin` / `arthur123`
+5. **Scan WiFi** 버튼으로 주변 AP 스캔 → 드롭다운에서 선택
+6. 패스워드 입력 → Apply → 자동 재부팅 후 WiFi 연결
+7. 이후 재부팅 시 자동 연결
+
+> **WiFi 재설정**: 부팅 시 FLASH 버튼을 누르고 있으면 AP 모드 강제 진입
 
 ## 하드웨어
 
@@ -65,8 +99,8 @@ BME280 I2C 주소: 0x76 (SDO=GND) — OLED 0x3C와 충돌 없음
        ├── TaskScheduler (협력적 멀티태스킹)
        ├── EventBus (pub/sub 모듈간 통신)
        ├── Core Modules
-       │    ├── ConfigManager (LittleFS + ArduinoJson v7)
-       │    ├── WiFiManager (IotWebConf 3.2.2 captive portal)
+       │    ├── WiFiManager (IotWebConf 3.2.1 captive portal + WiFi scan)
+       │    ├── ConfigManager (EEPROM via IotWebConf)
        │    ├── TimeManager (NTP 동기화)
        │    └── OTAManager (무선 펌웨어 업데이트)
        ├── Feature Modules
@@ -75,10 +109,12 @@ BME280 I2C 주소: 0x76 (SDO=GND) — OLED 0x3C와 충돌 없음
        │    ├── SensorModule (BME280)
        │    ├── MqttModule (arduino-mqtt / 256dpi)
        │    ├── NotificationModule
-       │    └── HomeAssistantModule
+       │    ├── ProxyManager (PC 프록시 mDNS 탐색, Dual Mode)
+       │    ├── HomeAssistantModule
+       │    └── AIModule (구독형 멀티 AI)
        └── UI Layer
             ├── ScreenManager (SimpleFSM)
-            └── Screens (Clock, Weather, Sensor, MQTT, Notification, Setup)
+            └── Screens (Clock, Weather, Sensor, MQTT, Notification, AI, Setup)
 ```
 
 ### 주요 설계 결정
@@ -87,7 +123,7 @@ BME280 I2C 주소: 0x76 (SDO=GND) — OLED 0x3C와 충돌 없음
 |------|------|------|
 | C++ 표준 | **C++14** (gnu++14) | C++17은 ESP8266 툴체인에서 불안정 |
 | MQTT 라이브러리 | **256dpi/MQTT** | PubSubClient는 IotWebConf와 충돌 (exception 28/29) |
-| WiFi 관리 | IotWebConf 3.2.2 | 비차단, TaskScheduler 호환 |
+| WiFi 관리 | IotWebConf 3.2.1 | 비차단, TaskScheduler 호환, Captive Portal |
 | 디스플레이 라이브러리 | Adafruit SSD1306 | 검증된 호환성 (1KB 프레임버퍼) |
 | 멀티태스킹 | TaskScheduler | ESP8266 yield() 호환, 15-18us 오버헤드 |
 | 문자열 처리 | char[] + F() 매크로 | String 클래스의 힙 파편화 방지 |
@@ -116,7 +152,7 @@ lib_deps =
     arkhipenko/TaskScheduler@^3.7.0
     bblanchon/ArduinoJson@^7.0.0
     256dpi/MQTT@^2.5.0
-    prampec/IotWebConf@^3.2.2
+    prampec/IotWebConf@^3.2.1
     adafruit/Adafruit SSD1306@^2.5.0
     adafruit/Adafruit BME280 Library@^2.2.0
 ```
@@ -131,9 +167,6 @@ lib_deps =
 ### 설치
 
 ```bash
-# 시스템 패키지 설치
-sudo apt update && sudo apt install -y python3-venv python3.12-venv curl git
-
 # PlatformIO 설치 (공식 인스톨러, 격리된 venv 자동 생성)
 curl -fsSL -o /tmp/get-platformio.py \
   https://raw.githubusercontent.com/platformio/platformio-core-installer/master/get-platformio.py
@@ -190,11 +223,11 @@ pio test -e embedded_test
 
 ## 로드맵
 
-- **Phase 0**: 개발 환경 설정
-- **Phase 1 (MVP)**: 시계 + 날씨 + 센서 디스플레이
+- **Phase 0**: 개발 환경 + OLED + WiFi 설정 (Captive Portal + WiFi Scan)
+- **Phase 1 (MVP)**: EventBus + NTP 시계 + 날씨 + BME280 센서
 - **Phase 2**: MQTT 통신 + 알림
-- **Phase 3**: Home Assistant 연동
-- **Phase 4**: AI API + Deep Sleep
+- **Phase 3**: PC 프록시 Docker + Home Assistant 연동
+- **Phase 4**: 구독형 멀티 AI + Deep Sleep
 
 ## 라이선스
 
