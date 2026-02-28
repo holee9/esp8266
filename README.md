@@ -21,7 +21,7 @@ ESP8266 HW-364 보드(OLED 내장)를 기반으로 한 모듈형 개인비서. E
 
 | 항목 | 값 |
 |------|-----|
-| Flash | 38.1% (365KB / 958KB) |
+| Flash | 9.5% (365KB / 4MB) |
 | RAM | 38.8% (31.7KB / 81.9KB) |
 | Free Heap (WiFi 연결 후) | ~45KB |
 
@@ -56,7 +56,7 @@ ESP8266 HW-364 보드(OLED 내장)를 기반으로 한 모듈형 개인비서. E
 |------|-----|
 | SoC | ESP8266EX (Tensilica LX106, 80/160MHz) |
 | 모듈 | ESP-12E / ESP-12F |
-| Flash | **1MB** |
+| Flash | **4MB** (1MB sketch + 3MB filesystem) |
 | RAM | ~50KB SRAM (WiFi + 라이브러리 로드 후 가용 10-18KB) |
 | USB-Serial | CH340G |
 | 내장 OLED | SSD1306 128x64, I2C @ 0x3C |
