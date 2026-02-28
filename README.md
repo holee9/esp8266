@@ -1,74 +1,74 @@
-# ARTHUR - ESP8266 Personal Assistant
+# ARTHUR - ESP8266 개인비서
 
 **Autonomous Real-Time Home Utility Responder**
 
-A modular personal assistant built on ESP8266 HW-364 (with built-in OLED), designed to run within the extreme memory constraints (~10-18KB usable heap) of the ESP8266 platform.
+ESP8266 HW-364 보드(OLED 내장)를 기반으로 한 모듈형 개인비서. ESP8266의 극도로 제한된 메모리(가용 힙 ~10-18KB) 환경에서 동작하도록 설계되었다.
 
-## Features (Planned)
+## 기능 (계획)
 
-- NTP Clock with date display
-- Weather forecast (OpenWeatherMap API)
-- Indoor temperature/humidity/pressure monitoring (BME280)
-- MQTT IoT device control
-- Push notification display
-- Home Assistant integration
-- AI API integration (OpenAI, single-shot queries)
+- NTP 시계 및 날짜 표시
+- 날씨 예보 (OpenWeatherMap API)
+- 실내 온도/습도/기압 모니터링 (BME280)
+- MQTT IoT 기기 제어
+- 푸시 알림 표시
+- Home Assistant 연동
+- AI API 연동 (OpenAI, 단발성 질의)
 
-## Hardware
+## 하드웨어
 
-### Board: HW-364A/B
+### 보드: HW-364A/B
 
-| Spec | Value |
-|------|-------|
+| 항목 | 값 |
+|------|-----|
 | SoC | ESP8266EX (Tensilica LX106, 80/160MHz) |
-| Module | ESP-12E / ESP-12F |
+| 모듈 | ESP-12E / ESP-12F |
 | Flash | **1MB** |
-| RAM | ~50KB SRAM (10-18KB usable after WiFi + libs) |
+| RAM | ~50KB SRAM (WiFi + 라이브러리 로드 후 가용 10-18KB) |
 | USB-Serial | CH340G |
-| Built-in OLED | SSD1306 128x64, I2C @ 0x3C |
-| OLED Colors | Top 16px yellow / Bottom 48px blue (dual-color) |
-| OLED Pins | **SDA=GPIO14, SCL=GPIO12** (non-standard!) |
-| USB | HW-364A=USB-C, HW-364B=Micro-USB (pin-compatible) |
+| 내장 OLED | SSD1306 128x64, I2C @ 0x3C |
+| OLED 색상 | 상단 16px 노랑 / 하단 48px 파랑 (2색) |
+| OLED 핀 | **SDA=GPIO14, SCL=GPIO12** (비표준!) |
+| USB | HW-364A=USB-C, HW-364B=Micro-USB (핀 호환) |
 
-### GPIO Availability (after OLED)
+### GPIO 가용성 (OLED 점유 후)
 
-| Pin | GPIO | Status | Notes |
-|-----|------|--------|-------|
-| D1 | GPIO5 | **Free** | I2C SCL (external sensors), interrupt OK |
-| D2 | GPIO4 | **Free** | I2C SDA (external sensors), interrupt OK |
-| D7 | GPIO13 | **Free** | Digital I/O, buzzer |
-| D0 | GPIO16 | **Limited** | No PWM/I2C/interrupt, deep sleep wake only |
-| A0 | ADC0 | **Free** | Analog input (frequent reads may interfere with WiFi) |
+| 핀 | GPIO | 상태 | 비고 |
+|-----|------|------|------|
+| D1 | GPIO5 | **사용 가능** | I2C SCL (외부 센서), 인터럽트 OK |
+| D2 | GPIO4 | **사용 가능** | I2C SDA (외부 센서), 인터럽트 OK |
+| D7 | GPIO13 | **사용 가능** | Digital I/O, 부저 |
+| D0 | GPIO16 | **제한적** | PWM/I2C/인터럽트 불가, Deep Sleep 웨이크업 전용 |
+| A0 | ADC0 | **사용 가능** | 아날로그 입력 (빈번한 읽기 시 WiFi 간섭 가능) |
 
-**Hardware SPI unavailable**: GPIO14 (HSPI_CLK) and GPIO12 (HSPI_MISO) occupied by OLED.
+**하드웨어 SPI 사용 불가**: GPIO14 (HSPI_CLK), GPIO12 (HSPI_MISO)를 OLED이 점유.
 
-### Wiring (BME280 via shared I2C bus)
+### 배선도 (BME280, I2C 버스 공유)
 
 ```
-HW-364 Board (built-in OLED)     BME280 Sensor (I2C)
+HW-364 보드 (OLED 내장)          BME280 센서 (I2C)
 ─────────────────────────────    ───────────────────
 3V3 ──────────────────────────── VCC
 GND ──────────────────────────── GND
-GPIO14 (D5) ── OLED SDA ──────── BME280 SDA (shared bus)
-GPIO12 (D6) ── OLED SCL ──────── BME280 SCL (shared bus)
+GPIO14 (D5) ── OLED SDA ──────── BME280 SDA (버스 공유)
+GPIO12 (D6) ── OLED SCL ──────── BME280 SCL (버스 공유)
 
-BME280 I2C address: 0x76 (SDO=GND) — no conflict with OLED 0x3C
+BME280 I2C 주소: 0x76 (SDO=GND) — OLED 0x3C와 충돌 없음
 ```
 
-> **Note**: Some HW-364 units have SDA/SCL swapped. If display doesn't work, try `Wire.begin(12, 14)`.
+> **주의**: 일부 HW-364 유닛은 SDA/SCL이 뒤바뀌어 있음. 디스플레이가 동작하지 않으면 `Wire.begin(12, 14)` 시도.
 
-## Software Architecture
+## 소프트웨어 아키텍처
 
 ```
 [main.cpp]
   └── App (Orchestrator)
-       ├── TaskScheduler (cooperative multitasking)
-       ├── EventBus (pub/sub inter-module communication)
+       ├── TaskScheduler (협력적 멀티태스킹)
+       ├── EventBus (pub/sub 모듈간 통신)
        ├── Core Modules
        │    ├── ConfigManager (LittleFS + ArduinoJson v7)
        │    ├── WiFiManager (IotWebConf 3.2.2 captive portal)
-       │    ├── TimeManager (NTP sync)
-       │    └── OTAManager (wireless firmware update)
+       │    ├── TimeManager (NTP 동기화)
+       │    └── OTAManager (무선 펌웨어 업데이트)
        ├── Feature Modules
        │    ├── ClockModule
        │    ├── WeatherModule (OpenWeatherMap)
@@ -81,35 +81,35 @@ BME280 I2C address: 0x76 (SDO=GND) — no conflict with OLED 0x3C
             └── Screens (Clock, Weather, Sensor, MQTT, Notification, Setup)
 ```
 
-### Key Design Decisions
+### 주요 설계 결정
 
-| Decision | Choice | Rationale |
-|----------|--------|-----------|
-| C++ Standard | **C++14** (gnu++14) | C++17 unstable on ESP8266 toolchain |
-| MQTT Library | **256dpi/MQTT** | PubSubClient crashes with IotWebConf (exception 28/29) |
-| WiFi Manager | IotWebConf 3.2.2 | Non-blocking, TaskScheduler compatible |
-| Display Library | Adafruit SSD1306 | Proven compatibility (1KB framebuffer) |
-| Multitasking | TaskScheduler | ESP8266 yield() compatible, 15-18us overhead |
-| String Handling | char[] + F() macro | Prevent heap fragmentation from String class |
-| Memory Allocation | Static only | No runtime new/malloc |
-| Filesystem | LittleFS | SPIFFS deprecated |
-| lwIP Variant | v2 Lower Memory | Memory savings, IotWebConf recommended |
+| 결정 | 선택 | 근거 |
+|------|------|------|
+| C++ 표준 | **C++14** (gnu++14) | C++17은 ESP8266 툴체인에서 불안정 |
+| MQTT 라이브러리 | **256dpi/MQTT** | PubSubClient는 IotWebConf와 충돌 (exception 28/29) |
+| WiFi 관리 | IotWebConf 3.2.2 | 비차단, TaskScheduler 호환 |
+| 디스플레이 라이브러리 | Adafruit SSD1306 | 검증된 호환성 (1KB 프레임버퍼) |
+| 멀티태스킹 | TaskScheduler | ESP8266 yield() 호환, 15-18us 오버헤드 |
+| 문자열 처리 | char[] + F() 매크로 | String 클래스의 힙 파편화 방지 |
+| 메모리 할당 | 정적 할당 only | 런타임 new/malloc 금지 |
+| 파일시스템 | LittleFS | SPIFFS deprecated |
+| lwIP 변형 | v2 Lower Memory | 메모리 절약, IotWebConf 권장 |
 
-### Memory Budget
+### 메모리 예산
 
-| Component | Usage |
-|-----------|-------|
-| WiFi STA (connected) | 20-25KB |
-| IotWebConf (webserver+config) | 4-8KB |
-| SSD1306 framebuffer | 1KB (fixed) |
-| MQTT client | 1.5-3KB |
-| ArduinoJson (temporary) | 1KB/block |
-| TaskScheduler (10 tasks) | ~500B |
-| BME280 driver | ~300B |
-| TLS Handshake (temporary) | 15KB (HTTPS only) |
-| **Remaining usable heap** | **10-18KB** |
+| 구성 요소 | 소비량 |
+|-----------|--------|
+| WiFi STA (연결 상태) | 20-25KB |
+| IotWebConf (웹서버+설정) | 4-8KB |
+| SSD1306 프레임버퍼 | 1KB (고정) |
+| MQTT 클라이언트 | 1.5-3KB |
+| ArduinoJson (일시적) | 1KB/블록 |
+| TaskScheduler (10개 태스크) | ~500B |
+| BME280 드라이버 | ~300B |
+| TLS Handshake (일시적) | 15KB (HTTPS 전용) |
+| **남은 가용 힙** | **10-18KB** |
 
-## Dependencies
+## 의존성
 
 ```ini
 lib_deps =
@@ -121,88 +121,88 @@ lib_deps =
     adafruit/Adafruit BME280 Library@^2.2.0
 ```
 
-## Development Setup
+## 개발 환경 설정
 
-### Prerequisites
+### 사전 요구사항
 
 - Python 3.12+
 - PlatformIO Core CLI
 
-### Installation
+### 설치
 
 ```bash
-# Install system packages
+# 시스템 패키지 설치
 sudo apt update && sudo apt install -y python3-venv python3.12-venv curl git
 
-# Install PlatformIO (official installer, creates isolated venv)
+# PlatformIO 설치 (공식 인스톨러, 격리된 venv 자동 생성)
 curl -fsSL -o /tmp/get-platformio.py \
   https://raw.githubusercontent.com/platformio/platformio-core-installer/master/get-platformio.py
 python3 /tmp/get-platformio.py
 
-# Add to PATH (zsh)
+# PATH 추가 (zsh)
 echo 'export PATH="$HOME/.platformio/penv/bin:$PATH"' >> ~/.zshrc
 source ~/.zshrc
 
-# Install udev rules for ESP8266/CH340
+# udev 규칙 설치 (ESP8266/CH340)
 curl -fsSL https://raw.githubusercontent.com/platformio/platformio-core/develop/platformio/assets/system/99-platformio-udev.rules \
   | sudo tee /etc/udev/rules.d/99-platformio-udev.rules
 sudo udevadm control --reload-rules && sudo udevadm trigger
 
-# Verify
+# 확인
 pio --version
 pio device list
 ```
 
-### Build & Upload
+### 빌드 & 업로드
 
 ```bash
-# Debug build
+# Debug 빌드
 pio run
 
-# Upload to board
+# 보드에 업로드
 pio run --target upload
 
-# Serial monitor
+# 시리얼 모니터
 pio device monitor --baud 115200
 
-# Run native tests (PC)
+# Native 테스트 (PC 실행)
 pio test -e native_test
 
-# Run embedded tests (on device)
+# Embedded 테스트 (실제 장치)
 pio test -e embedded_test
 ```
 
-## Display UI (Dual-Color OLED)
+## 디스플레이 UI (2색 OLED)
 
-Yellow zone (rows 0-15) = status bar, Blue zone (rows 16-63) = content.
+노랑 영역(행 0-15) = 상태바, 파랑 영역(행 16-63) = 콘텐츠.
 
 ```
-Clock:                         Weather:
+시계:                          날씨:
 ┌────────────────────────┐     ┌────────────────────────┐
-│ 22.5C 45% WiFi [yellow]│     │ Seoul   3C    [yellow] │
+│ 22.5C 45% WiFi  [노랑] │     │ Seoul   3C      [노랑] │
 ├────────────────────────┤     ├────────────────────────┤
 │                        │     │                        │
-│      14:35:28          │     │  Clear                 │
-│    2026-02-28 Sat      │     │  Feels:-1C Hum:35%    │
-│                 [blue] │     │  Wind:3m/s      [blue] │
+│      14:35:28          │     │  맑음                  │
+│    2026-02-28 토       │     │  체감:-1C 습도:35%     │
+│                 [파랑] │     │  풍속:3m/s      [파랑] │
 └────────────────────────┘     └────────────────────────┘
 ```
 
-## Roadmap
+## 로드맵
 
-- **Phase 0**: Development environment setup
-- **Phase 1 (MVP)**: Clock + Weather + Sensor display
-- **Phase 2**: MQTT communication + Notifications
-- **Phase 3**: Home Assistant integration
+- **Phase 0**: 개발 환경 설정
+- **Phase 1 (MVP)**: 시계 + 날씨 + 센서 디스플레이
+- **Phase 2**: MQTT 통신 + 알림
+- **Phase 3**: Home Assistant 연동
 - **Phase 4**: AI API + Deep Sleep
 
-## License
+## 라이선스
 
 MIT
 
-## References
+## 참고 자료
 
-- [peff74/esp8266_OLED_HW-364A](https://github.com/peff74/esp8266_OLED_HW-364A) - HW-364A reference implementation
+- [peff74/esp8266_OLED_HW-364A](https://github.com/peff74/esp8266_OLED_HW-364A) - HW-364A 레퍼런스 구현
 - [ESP8266 Pinout Reference](https://randomnerdtutorials.com/esp8266-pinout-reference-gpios/)
-- [IotWebConf](https://github.com/prampec/IotWebConf) - WiFi configuration portal
-- [TaskScheduler](https://github.com/arkhipenko/TaskScheduler) - Cooperative multitasking
+- [IotWebConf](https://github.com/prampec/IotWebConf) - WiFi 설정 포털
+- [TaskScheduler](https://github.com/arkhipenko/TaskScheduler) - 협력적 멀티태스킹
