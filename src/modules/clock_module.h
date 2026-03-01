@@ -10,6 +10,8 @@
 
 // 전방 선언 (의존성 최소화)
 class TimeManager;
+struct SensorData;
+class WeatherModule;
 
 /**
  * @brief ClockModule 클래스
@@ -57,6 +59,14 @@ private:
     unsigned long _lastUpdate;
     bool _timeSynced;
 
+    // 센서 데이터 (SENSOR_UPDATED 이벤트)
+    float _lastSensorTemp;
+    bool _sensorDataValid;
+
+    // 날씨 데이터 (WEATHER_UPDATED 이벤트)
+    float _lastWeatherTemp;
+    bool _weatherDataValid;
+
     static const unsigned long UPDATE_INTERVAL_MS = 1000;  // 1초
 
     /**
@@ -83,6 +93,16 @@ private:
      * @brief TIME_SYNCED 이벤트 콜백 (정적 함수)
      */
     static void onTimeSynced(const Event& event, void* userData);
+
+    /**
+     * @brief SENSOR_UPDATED 이벤트 콜백 (정적 함수)
+     */
+    static void onSensorUpdated(const Event& event, void* userData);
+
+    /**
+     * @brief WEATHER_UPDATED 이벤트 콜백 (정적 함수)
+     */
+    static void onWeatherUpdated(const Event& event, void* userData);
 };
 
 // 전역 인스턴스 포인터 (콜백용)

@@ -220,17 +220,15 @@ void TimeManager::getFormattedDateTime(char* dateTimeBuf, size_t bufSize) {
     time_t now = time(nullptr);
     struct tm* tmInfo = localtime(&now);
 
-    // 한국어 형식: "2024년 2월 28일 수요일 14:30:00"
-    const char* weekDays[] = {"일", "월", "화", "수", "목", "금", "토"};
+    // @MX:NOTE: [OLED 호환] SSD1306은 한글 미지원, 영문 포맷 사용
+    // Format: "2024-02-28 (Wed)"
+    const char* weekDays[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
 
-    snprintf(dateTimeBuf, bufSize, "%04d년 %2d월 %2d일 (%s요일) %02d:%02d:%02d",
+    snprintf(dateTimeBuf, bufSize, "%04d-%02d-%02d (%s)",
              tmInfo->tm_year + 1900,
              tmInfo->tm_mon + 1,
              tmInfo->tm_mday,
-             weekDays[tmInfo->tm_wday],
-             tmInfo->tm_hour,
-             tmInfo->tm_min,
-             tmInfo->tm_sec);
+             weekDays[tmInfo->tm_wday]);
 }
 
 unsigned long TimeManager::getTimestamp() {

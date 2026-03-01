@@ -5,6 +5,8 @@
 #include "../core/event_bus.h"
 #include "../include/arthur_pins.h"
 #include "../include/arthur_config.h"
+#include "weather_module.h"  // @MX:NOTE: WeatherData 구조체 사용을 위해 포함
+#include "sensor_module.h"   // @MX:NOTE: SensorData 구조체 사용을 위해 포함
 
 // 전역 포인터 정의 (이벤트 콜백용)
 ClockModule* gClockModulePtr = nullptr;
@@ -15,6 +17,10 @@ ClockModule::ClockModule(Adafruit_SSD1306& display)
     , _visible(false)
     , _lastUpdate(0)
     , _timeSynced(false)
+    , _lastSensorTemp(0)
+    , _sensorDataValid(false)
+    , _lastWeatherTemp(0)
+    , _weatherDataValid(false)
 {
 }
 
@@ -24,8 +30,10 @@ void ClockModule::begin() {
     // 전역 포인터 설정 (콜백용)
     gClockModulePtr = this;
 
-    // TIME_SYNCED 이벤트 구독
+    // 이벤트 구독
     gEventBus.subscribe(TIME_SYNCED, onTimeSynced, nullptr);
+    gEventBus.subscribe(SENSOR_UPDATED, onSensorUpdated, nullptr);
+    gEventBus.subscribe(WEATHER_UPDATED, onWeatherUpdated, nullptr);
 
     _initialized = true;
     _visible = true;
@@ -71,7 +79,14 @@ void ClockModule::drawClockScreen() {
 
     // 상태바 (노랑 영역, 0-15행)
     if (_timeSynced) {
-        drawStatusBar("ARTHUR");
+        // 센서 데이터가 있으면 온도 표시
+        if (_sensorDataValid) {
+            char statusBuf[32];
+            snprintf(statusBuf, sizeof(statusBuf), "ARTHUR %.1fC", _lastSensorTemp);
+            drawStatusBar(statusBuf);
+        } else {
+            drawStatusBar("ARTHUR");
+        }
     } else {
         drawStatusBar("Syncing...");
     }
@@ -152,5 +167,37 @@ void ClockModule::onTimeSynced(const Event& event, void* userData) {
         Serial.println(F("ClockModule: Time synced event received"));
         gClockModulePtr->_timeSynced = true;
         gClockModulePtr->_lastUpdate = 0;  // 즉시 갱신 트리거
+    }
+}
+
+// SENSOR_UPDATED 이벤트 콜백
+void ClockModule::onSensorUpdated(const Event& event, void* userData) {
+    (void)userData;
+
+    if (gClockModulePtr != nullptr && event.data != nullptr) {
+        const SensorData* data = static_cast<const SensorData*>(event.data);
+        if (data != nullptr && data->valid) {
+            gClockModulePtr->_lastSensorTemp = data->temperature;
+            gClockModulePtr->_sensorDataValid = true;
+            gClockModulePtr->_lastUpdate = 0;  // 즉시 갱신 트리거
+            Serial.println(F("ClockModule: Sensor data received"));
+        }
+    }
+}
+
+// WEATHER_UPDATED 이벤트 콜백
+void ClockModule::onWeatherUpdated(const Event& event, void* userData) {
+    (void)userData;
+
+    if (gClockModulePtr != nullptr && event.data != nullptr) {
+        // WeatherModule::WeatherData 구조체 사용
+        const WeatherModule::WeatherData* data =
+            static_cast<const WeatherModule::WeatherData*>(event.data);
+        if (data != nullptr) {
+            gClockModulePtr->_lastWeatherTemp = data->temperature;
+            gClockModulePtr->_weatherDataValid = true;
+            gClockModulePtr->_lastUpdate = 0;  // 즉시 갱신 트리거
+            Serial.println(F("ClockModule: Weather data received"));
+        }
     }
 }

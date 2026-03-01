@@ -2,20 +2,35 @@
 
 **Autonomous Real-Time Home Utility Responder**
 
-ESP8266 HW-364 보드(OLED 내장)를 기반으로 한 모듈형 개인비서. ESP8266의 극도로 제한된 메모리(가용 힙 ~10-18KB) 환경에서 동작하도록 설계되었다.
+ESP8266 HW-364 보드(OLED 내장)를 기반으로 한 모듈형 개인비서. ESP8266의 극도로 제한된 메모리(가용 힙 ~10-18KB) 환경에서 동작하도록 설계되었습니다.
 
 **Claw 분류**: AttoClaw — Claw 생태계에서 가장 극소 단위의 AI 에이전트
 
-## 현재 상태: Phase 0 완료
+---
 
-### 구현 완료
+## 📊 현재 상태
 
-- PlatformIO 개발 환경 구축 (ESP8266 툴체인, 1MB flash 설정)
-- OLED 디스플레이 동작 확인 (SSD1306, I2C, GPIO14/12)
-- IotWebConf Captive Portal WiFi 설정 (시리얼/PC 불필요)
-- WiFi 스캔 드롭다운 (설정 페이지에서 AP 목록 자동 표시)
-- OLED 상태 표시 (Setup Mode → Connecting → WiFi OK)
-- 2색 OLED 레이아웃 (상단 노랑 상태바 / 하단 파랑 콘텐츠)
+### 구현 현황 (모듈별)
+
+| 모듈 | 구현 | main.cpp 통합 | 테스트 | 상태 |
+|------|------|----------------|--------|------|
+| **EventBus** | ✅ 100% | ⚠️ 미통합 | ✅ 9케이스 | pub/sub 통신 완료 |
+| **TimeManager** | ✅ 100% | ⚠️ 미통합 | ❌ 미구현 | NTP 동기화 완료 |
+| **ConfigManager** | ✅ 100% | ⚠️ 미통합 | ❌ 미구현 | JSON 설정 완료 |
+| **CacheManager** | ✅ 100% | ⚠️ 미통합 | ❌ 미구현 | TTL 캐시 완료 |
+| **ClockModule** | ✅ 100% | ⚠️ 미통합 | ❌ 미구현 | OLED 시계 완료 |
+| **SensorModule** | ✅ 100% | ⚠️ 미통합 | ❌ 미구현 | BME280 센서 완료 |
+| **WeatherModule** | ✅ 100% | ⚠️ 미통합 | ❌ 미구현 | OpenWeatherMap API 완료 |
+| **WiFiManager** | ✅ 100% | ✅ 통합 | N/A | Captive Portal 완료 |
+
+### 코드품질 현황
+
+| 항목 | 현재 값 | 목표 값 | 비고 |
+|------|---------|---------|------|
+| TRUST 5 점수 | 15/25 (60%) | 23/25 (92%) | `.moai/specs/CODE-QUALITY/spec.md` |
+| 테스트 커버리지 | ~15% | 85% | EventBus만 테스트됨 |
+| String 위반 | 1건 | 0건 | `weather_module.cpp:112` |
+| 모듈 통합 | 0% | 100% | Phase 1 진행 중 |
 
 ### 빌드 현황
 
@@ -25,18 +40,34 @@ ESP8266 HW-364 보드(OLED 내장)를 기반으로 한 모듈형 개인비서. E
 | RAM | 38.8% (31.7KB / 81.9KB) |
 | Free Heap (WiFi 연결 후) | ~45KB |
 
-## 기능 (계획)
+---
 
-- NTP 시계 및 날짜 표시
-- 날씨 예보 (OpenWeatherMap API)
-- 실내 온도/습도/기압 모니터링 (BME280)
-- MQTT IoT 기기 제어
-- 푸시 알림 표시
-- Home Assistant 연동 (PC 프록시 경유)
-- 구독형 멀티 AI 에이전트 (ChatGPT/Claude/Gemini/Ollama)
-- Dual Mode (PC Enhanced / Standalone)
+## 🎯 기능
 
-## WiFi 설정 방법
+### 현재 동작 기능 (Phase 0)
+
+- ✅ **WiFi 설정**: Captive Portal로 스마트폰에서 직접 설정 (PC 불필요)
+- ✅ **WiFi 스캔**: 설정 페이지에서 주변 AP 자동 스캔 후 드롭다운 선택
+- ✅ **OLED 디스플레이**: 2색 OLED (상단 노랑 상태바 + 하단 파랑 콘텐츠)
+- ✅ **상태 표시**: Setup Mode → Connecting → WiFi OK 단계별 표시
+
+### 구현 완료 미통합 기능
+
+- ⚠️ **NTP 시계**: TimeManager 구현 완료, main.cpp 통합 필요
+- ⚠️ **날씨 예보**: WeatherModule 구현 완료, main.cpp 통합 필요
+- ⚠️ **실내 환경 모니터링**: SensorModule 구현 완료, main.cpp 통합 필요
+
+### 계획된 기능 (Phase 2-4)
+
+- 📋 MQTT IoT 기기 제어
+- 📋 푸시 알림 표시
+- 📋 Home Assistant 연동 (PC 프록시 경유)
+- 📋 구독형 멀티 AI 에이전트 (ChatGPT/Claude/Gemini/Ollama)
+- 📋 Dual Mode (PC Enhanced / Standalone)
+
+---
+
+## 🔧 WiFi 설정 방법
 
 1. 최초 부팅 시 OLED에 "Setup Mode" 표시
 2. 스마트폰 WiFi에서 **ARTHUR** AP에 연결 (패스워드: `arthur123`)
@@ -48,7 +79,9 @@ ESP8266 HW-364 보드(OLED 내장)를 기반으로 한 모듈형 개인비서. E
 
 > **WiFi 재설정**: 부팅 시 FLASH 버튼을 누르고 있으면 AP 모드 강제 진입
 
-## 하드웨어
+---
+
+## 📦 하드웨어
 
 ### 보드: HW-364A/B
 
@@ -91,30 +124,31 @@ BME280 I2C 주소: 0x76 (SDO=GND) — OLED 0x3C와 충돌 없음
 
 > **주의**: 일부 HW-364 유닛은 SDA/SCL이 뒤바뀌어 있음. 디스플레이가 동작하지 않으면 `Wire.begin(12, 14)` 시도.
 
-## 소프트웨어 아키텍처
+---
+
+## 🏗️ 소프트웨어 아키텍처
 
 ```
 [main.cpp]
   └── App (Orchestrator)
-       ├── TaskScheduler (협력적 멀티태스킹)
        ├── EventBus (pub/sub 모듈간 통신)
        ├── Core Modules
-       │    ├── WiFiManager (IotWebConf 3.2.1 captive portal + WiFi scan)
-       │    ├── ConfigManager (EEPROM via IotWebConf)
+       │    ├── WiFiManager (tzapu/WiFiManager)
+       │    ├── ConfigManager (LittleFS JSON)
        │    ├── TimeManager (NTP 동기화)
+       │    ├── CacheManager (TTL 캐시)
        │    └── OTAManager (무선 펌웨어 업데이트)
        ├── Feature Modules
-       │    ├── ClockModule
+       │    ├── ClockModule (OLED 시계)
        │    ├── WeatherModule (OpenWeatherMap)
        │    ├── SensorModule (BME280)
-       │    ├── MqttModule (arduino-mqtt / 256dpi)
+       │    ├── MqttModule (256dpi/MQTT)
        │    ├── NotificationModule
-       │    ├── ProxyManager (PC 프록시 mDNS 탐색, Dual Mode)
+       │    ├── ProxyManager (PC 프록시 mDNS)
        │    ├── HomeAssistantModule
-       │    └── AIModule (구독형 멀티 AI)
+       │    └── AIModule (멀티 AI)
        └── UI Layer
-            ├── ScreenManager (SimpleFSM)
-            └── Screens (Clock, Weather, Sensor, MQTT, Notification, AI, Setup)
+            └── Screens (Clock, Weather, Sensor, etc.)
 ```
 
 ### 주요 설계 결정
@@ -122,42 +156,41 @@ BME280 I2C 주소: 0x76 (SDO=GND) — OLED 0x3C와 충돌 없음
 | 결정 | 선택 | 근거 |
 |------|------|------|
 | C++ 표준 | **C++14** (gnu++14) | C++17은 ESP8266 툴체인에서 불안정 |
-| MQTT 라이브러리 | **256dpi/MQTT** | PubSubClient는 IotWebConf와 충돌 (exception 28/29) |
-| WiFi 관리 | IotWebConf 3.2.1 | 비차단, TaskScheduler 호환, Captive Portal |
-| 디스플레이 라이브러리 | Adafruit SSD1306 | 검증된 호환성 (1KB 프레임버퍼) |
-| 멀티태스킹 | TaskScheduler | ESP8266 yield() 호환, 15-18us 오버헤드 |
+| WiFi 관리 | **WiFiManager** | tzapu/WiFiManager, 안정적 Captive Portal |
+| 디스플레이 | Adafruit SSD1306 | 검증된 호환성 (1KB 프레임버퍼) |
 | 문자열 처리 | char[] + F() 매크로 | String 클래스의 힙 파편화 방지 |
 | 메모리 할당 | 정적 할당 only | 런타임 new/malloc 금지 |
 | 파일시스템 | LittleFS | SPIFFS deprecated |
-| lwIP 변형 | v2 Lower Memory | 메모리 절약, IotWebConf 권장 |
+| lwIP 변형 | v2 Lower Memory | 메모리 절약 |
 
 ### 메모리 예산
 
 | 구성 요소 | 소비량 |
 |-----------|--------|
 | WiFi STA (연결 상태) | 20-25KB |
-| IotWebConf (웹서버+설정) | 4-8KB |
 | SSD1306 프레임버퍼 | 1KB (고정) |
 | MQTT 클라이언트 | 1.5-3KB |
 | ArduinoJson (일시적) | 1KB/블록 |
-| TaskScheduler (10개 태스크) | ~500B |
 | BME280 드라이버 | ~300B |
-| TLS Handshake (일시적) | 15KB (HTTPS 전용) |
-| **남은 가용 힙** | **10-18KB** |
+| **모듈 통합 후 가용 힙** | **~30KB** |
 
-## 의존성
+---
+
+## 📚 의존성
 
 ```ini
 lib_deps =
     arkhipenko/TaskScheduler@^3.7.0
     bblanchon/ArduinoJson@^7.0.0
     256dpi/MQTT@^2.5.0
-    prampec/IotWebConf@^3.2.1
+    tzapu/WiFiManager@^2.0.17
     adafruit/Adafruit SSD1306@^2.5.0
     adafruit/Adafruit BME280 Library@^2.2.0
 ```
 
-## 개발 환경 설정
+---
+
+## 🛠️ 개발 환경 설정
 
 ### 사전 요구사항
 
@@ -167,7 +200,7 @@ lib_deps =
 ### 설치
 
 ```bash
-# PlatformIO 설치 (공식 인스톨러, 격리된 venv 자동 생성)
+# PlatformIO 설치
 curl -fsSL -o /tmp/get-platformio.py \
   https://raw.githubusercontent.com/platformio/platformio-core-installer/master/get-platformio.py
 python3 /tmp/get-platformio.py
@@ -176,20 +209,16 @@ python3 /tmp/get-platformio.py
 echo 'export PATH="$HOME/.platformio/penv/bin:$PATH"' >> ~/.zshrc
 source ~/.zshrc
 
-# udev 규칙 설치 (ESP8266/CH340)
+# udev 규칙 설치
 curl -fsSL https://raw.githubusercontent.com/platformio/platformio-core/develop/platformio/assets/system/99-platformio-udev.rules \
   | sudo tee /etc/udev/rules.d/99-platformio-udev.rules
 sudo udevadm control --reload-rules && sudo udevadm trigger
-
-# 확인
-pio --version
-pio device list
 ```
 
 ### 빌드 & 업로드
 
 ```bash
-# Debug 빌드
+# 빌드
 pio run
 
 # 보드에 업로드
@@ -198,44 +227,63 @@ pio run --target upload
 # 시리얼 모니터
 pio device monitor --baud 115200
 
-# Native 테스트 (PC 실행)
+# 네이티브 테스트
 pio test -e native_test
 
-# Embedded 테스트 (실제 장치)
+# 임베디드 테스트
 pio test -e embedded_test
 ```
 
-## 디스플레이 UI (2색 OLED)
+---
+
+## 🖥️ 디스플레이 UI (2색 OLED)
 
 노랑 영역(행 0-15) = 상태바, 파랑 영역(행 16-63) = 콘텐츠.
 
 ```
-시계:                          날씨:
+시계 (Phase 1):               날씨 (Phase 1):
 ┌────────────────────────┐     ┌────────────────────────┐
-│ 22.5C 45% WiFi  [노랑] │     │ Seoul   3C      [노랑] │
+│ ARTHUR 22°C WiFi[노랑] │     │ Seoul 3°C     [노랑] │
 ├────────────────────────┤     ├────────────────────────┤
 │                        │     │                        │
 │      14:35:28          │     │  맑음                  │
-│    2026-02-28 토       │     │  체감:-1C 습도:35%     │
-│                 [파랑] │     │  풍속:3m/s      [파랑] │
+│   2026-03-01 (토)       │     │  체감:-1°C 습도:35%    │
+│                [파랑] │     │  풍속:3m/s      [파랑] │
 └────────────────────────┘     └────────────────────────┘
 ```
 
-## 로드맵
+---
 
-- **Phase 0**: 개발 환경 + OLED + WiFi 설정 (Captive Portal + WiFi Scan)
-- **Phase 1 (MVP)**: EventBus + NTP 시계 + 날씨 + BME280 센서
-- **Phase 2**: MQTT 통신 + 알림
-- **Phase 3**: PC 프록시 Docker + Home Assistant 연동
-- **Phase 4**: 구독형 멀티 AI + Deep Sleep
+## 🗺️ 로드맵
 
-## 라이선스
+| Phase | 상태 | 내용 | 참고 |
+|-------|------|------|------|
+| **Phase 0** | ✅ 완료 | 개발 환경 + OLED + WiFi 설정 | - |
+| **Phase 1** | 🔄 진행 중 | EventBus + NTP 시계 + 날씨 + 센서 | `.moai/specs/CODE-QUALITY/spec.md` |
+| **Phase 2** | 📋 계획 | MQTT 통신 + 알림 | - |
+| **Phase 3** | 📋 계획 | PC 프록시 + Home Assistant | - |
+| **Phase 4** | 📋 계획 | 멀티 AI + Deep Sleep | - |
 
-MIT
+---
 
-## 참고 자료
+## 📖 참고 자료
 
 - [peff74/esp8266_OLED_HW-364A](https://github.com/peff74/esp8266_OLED_HW-364A) - HW-364A 레퍼런스 구현
 - [ESP8266 Pinout Reference](https://randomnerdtutorials.com/esp8266-pinout-reference-gpios/)
-- [IotWebConf](https://github.com/prampec/IotWebConf) - WiFi 설정 포털
 - [TaskScheduler](https://github.com/arkhipenko/TaskScheduler) - 협력적 멀티태스킹
+
+## 📄 문서
+
+- **코드품질 고도화 계획**: `.moai/specs/CODE-QUALITY/spec.md`
+- **아키텍처 분석**: `.moai/specs/CODE-QUALITY/research.md`
+
+---
+
+## 📜 라이선스
+
+MIT
+
+---
+
+**Last Updated**: 2026-03-01
+**MoAI-ADK Version**: 4.0.0
