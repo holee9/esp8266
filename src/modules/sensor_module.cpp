@@ -82,6 +82,9 @@ void SensorModule::update() {
     // 센서 읽기
     SensorData data;
     if (readSensor(data)) {
+        // 마지막 데이터 저장 (버그 수정)
+        _lastData = data;
+
         // 캐시에 저장
         cacheSensorData(data);
 
